@@ -1,0 +1,380 @@
+{% extends 'base.html' %}
+
+{% block title %}Venta Controlada - NTPCarburantes Petrol{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1 class="h2 mb-1"><i class="bi bi-cart-check-fill text-primary me-2"></i>Módulo de Ventas Controladas</h1>
+        <p class="text-muted">Despacho inteligente con validación dinámica de cupos en tiempo real para mitigar el sobreabastecimiento.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Formulario de Registro de Venta -->
+    <div class="col-lg-5">
+        <div class="card-custom mb-4">
+            <div class="card-custom-header">
+                <span class="fw-bold"><i class="bi bi-plus-circle me-2 text-primary"></i>Nueva Venta Controlada</span>
+                <span class="badge bg-danger">Venta Controlada</span>
+            </div>
+            <div class="card-custom-body">
+                <form action="{{ url_for('ventas') }}" method="POST" id="ventaForm">
+                    
+                    <!-- 1. Identificación del Cliente -->
+                    <div class="mb-3">
+                        <label for="identificacion" class="form-label form-label-custom">Identificación del Cliente (Placa o CI/NIT)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control form-control-custom text-uppercase" id="identificacion" name="identificacion" placeholder="ej. ABC-123 o 8765432" required autocomplete="off">
+                        </div>
+                        <div class="form-text small text-muted">Ingrese la placa del vehículo o la cédula para calcular el cupo en tiempo real.</div>
+                    </div>
+
+                    <!-- Banner Dinámico del Estado del Cupo / Mensajes de API -->
+                    <div id="quotaFeedback" class="quota-box d-none">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span id="quotaIcon"></span>
+                            <h6 class="mb-0 fw-bold" id="quotaTitle">Cargando datos...</h6>
+                        </div>
+                        <div class="small mb-2" id="quotaMessage"></div>
+                        <div class="row g-2 text-center text-dark border-top pt-2">
+                            <div class="col-4">
+                                <div class="small text-muted">Cupo Máx.</div>
+                                <div class="fw-bold fs-6" id="quotaMax">0L</div>
+                            </div>
+                            <div class="col-4 border-start border-end">
+                                <div class="small text-muted">Consumido</div>
+                                <div class="fw-bold fs-6" id="quotaConsumed">0L</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="small text-muted">Disponible</div>
+                                <div class="fw-bold fs-6 text-success" id="quotaAvailable">0L</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Campos de Auto-Registro si el Cliente No Existe (Aparecen dinámicamente) -->
+                    <div id="autoRegisterFields" class="d-none border border-warning border-dashed rounded-3 p-3 mb-3 bg-warning bg-opacity-10">
+                        <h6 class="fw-bold text-warning-emphasis mb-2"><i class="bi bi-person-plus-fill me-1"></i>Registrar Cliente Nuevo</h6>
+                        <div class="mb-2">
+                            <label for="cliente_nombre_auto" class="form-label form-label-custom">Nombre Completo / Razón Social</label>
+                            <input type="text" class="form-control form-control-custom" id="cliente_nombre_auto" name="cliente_nombre_auto" placeholder="ej. Luis Gomez">
+                        </div>
+                        <div>
+                            <label for="cliente_ci_nit_auto" class="form-label form-label-custom">Cédula de Identidad / NIT</label>
+                            <input type="text" class="form-control form-control-custom" id="cliente_ci_nit_auto" name="cliente_ci_nit_auto" placeholder="ej. 7654321">
+                        </div>
+                    </div>
+
+                    <!-- 2. Selección de Tanque y Carburante -->
+                    <div class="mb-3">
+                        <label for="tanque_id" class="form-label form-label-custom">Tanque y Tipo de Combustible</label>
+                        <select class="form-select form-control-custom" id="tanque_id" name="tanque_id" required>
+                            <option value="" disabled selected>Seleccione tanque...</option>
+                            {% for t in tanques %}
+                                <option value="{{ t.id }}" data-stock="{{ t.stock_actual }}" data-tipo="{{ t.tipo_carburante }}">
+                                    {{ t.identificador }} ({{ t.tipo_carburante }}) - Stock: {{ t.stock_actual|round(2) }}L
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text small text-muted" id="tankStockFeedback"></div>
+                    </div>
+
+                    <!-- 3. Cantidad en Litros -->
+                    <div class="mb-3">
+                        <label for="litros" class="form-label form-label-custom">Litros a Despachar</label>
+                        <div class="input-group">
+                            <input type="number" step="0.01" min="0.01" class="form-control form-control-custom" id="litros" name="litros" placeholder="ej. 45.50" required disabled>
+                            <span class="input-group-text bg-light">Litros</span>
+                        </div>
+                        <div class="invalid-feedback d-block" id="litrosWarning"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="fecha" class="form-label form-label-custom">Fecha y Hora de Venta</label>
+                        <input type="datetime-local" class="form-control form-control-custom" id="fecha" name="fecha" required>
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-primary-custom py-2" id="btnProcesar" disabled>
+                            <i class="bi bi-cart-plus-fill me-2"></i>Procesar Venta
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historial de Ventas -->
+    <div class="col-lg-7">
+        <div class="card-custom h-100">
+            <div class="card-custom-header">
+                <span class="fw-bold"><i class="bi bi-clock-history me-2 text-primary"></i>Registro de Salidas (Últimos despachos)</span>
+                <span class="badge bg-secondary">{{ ventas|length }} Ventas</span>
+            </div>
+            <div class="card-custom-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th>Fecha/Hora</th>
+                                <th>Cliente / Placa</th>
+                                <th>Tanque / Tipo</th>
+                                <th>Litros Vendidos</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if ventas %}
+                                {% for v in ventas %}
+                                    <tr>
+                                        <td>{{ v.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
+                                        <td>
+                                            <div class="fw-bold">{{ v.cliente.nombre }}</div>
+                                            <div class="text-muted small">Placa: {{ v.cliente.placa }} | CI/NIT: {{ v.cliente.ci_nit }}</div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ v.tanque.identificador }}</span>
+                                            <span class="small">{{ v.tanque.tipo_carburante }}</span>
+                                        </td>
+                                        <td class="fw-bold text-success">{{ v.litros|round(2) }} L</td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted">No hay registros de salidas de carburante en el sistema.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const identificacionInput = document.getElementById('identificacion');
+        const quotaFeedback = document.getElementById('quotaFeedback');
+        const quotaIcon = document.getElementById('quotaIcon');
+        const quotaTitle = document.getElementById('quotaTitle');
+        const quotaMessage = document.getElementById('quotaMessage');
+        const quotaMax = document.getElementById('quotaMax');
+        const quotaConsumed = document.getElementById('quotaConsumed');
+        const quotaAvailable = document.getElementById('quotaAvailable');
+        
+        const autoRegisterFields = document.getElementById('autoRegisterFields');
+        const clienteNombreAuto = document.getElementById('cliente_nombre_auto');
+        const clienteCiNitAuto = document.getElementById('cliente_ci_nit_auto');
+        
+        const tanqueSelect = document.getElementById('tanque_id');
+        const tankStockFeedback = document.getElementById('tankStockFeedback');
+        const litrosInput = document.getElementById('litros');
+        const litrosWarning = document.getElementById('litrosWarning');
+        const btnProcesar = document.getElementById('btnProcesar');
+        const dateInput = document.getElementById('fecha');
+
+        // Estado del cálculo
+        let clientDetails = null;
+        let selectedTankStock = 0;
+
+        // Pre-llenar fecha y hora actual local
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        dateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+
+        // Escucha del input de identificación (placa o CI/NIT)
+        let typingTimer;
+        identificacionInput.addEventListener('input', function() {
+            clearTimeout(typingTimer);
+            const value = identificacionInput.value.trim();
+            if (value.length >= 3) {
+                typingTimer = setTimeout(() => verificarCliente(value), 500);
+            } else {
+                ocultarQuotaFeedback();
+                deshabilitarControlesVenta();
+            }
+        });
+
+        // Al cambiar de tanque
+        tanqueSelect.addEventListener('change', function() {
+            const selectedOption = tanqueSelect.options[tanqueSelect.selectedIndex];
+            if (selectedOption.value) {
+                selectedTankStock = parseFloat(selectedOption.getAttribute('data-stock') || '0');
+                const tipo = selectedOption.getAttribute('data-tipo');
+                tankStockFeedback.innerHTML = `<span class="text-success fw-bold"><i class="bi bi-check2"></i> Stock disponible: ${selectedTankStock.toFixed(2)} Litros (${tipo})</span>`;
+                litrosInput.disabled = false;
+                validarFormulario();
+            } else {
+                selectedTankStock = 0;
+                tankStockFeedback.innerHTML = '';
+                litrosInput.disabled = true;
+                validarFormulario();
+            }
+        });
+
+        // Al cambiar de litros
+        litrosInput.addEventListener('input', validarFormulario);
+
+        // Consultar la API
+        async function verificarCliente(identidad) {
+            try {
+                const response = await fetch(`/api/verificar_cliente?identificacion=${encodeURIComponent(identidad)}`);
+                const data = await response.json();
+                clientDetails = data;
+                
+                quotaFeedback.className = 'quota-box';
+                quotaFeedback.classList.remove('d-none');
+                
+                if (data.error) {
+                    quotaIcon.innerHTML = '<i class="bi bi-exclamation-octagon-fill text-danger fs-5"></i>';
+                    quotaTitle.innerText = 'Error';
+                    quotaMessage.innerText = data.error;
+                    deshabilitarControlesVenta();
+                    return;
+                }
+
+                if (data.suspendido) {
+                    // Cliente bloqueado administrativamente
+                    quotaFeedback.classList.add('suspendido');
+                    quotaIcon.innerHTML = '<i class="bi bi-shield-fill-x text-danger fs-5"></i>';
+                    quotaTitle.innerText = `Cliente Bloqueado: ${data.nombre}`;
+                    quotaMessage.innerHTML = `<strong class="text-danger">${data.mensaje}</strong>`;
+                    
+                    quotaMax.innerText = '0L';
+                    quotaConsumed.innerText = '0L';
+                    quotaAvailable.innerText = '0L';
+                    quotaAvailable.className = 'fw-bold fs-6 text-danger';
+                    
+                    autoRegisterFields.classList.add('d-none');
+                    deshabilitarControlesVenta();
+                    return;
+                }
+
+                if (!data.existe) {
+                    // Cliente no registrado (se activará auto-registro)
+                    quotaFeedback.classList.add('warning');
+                    quotaIcon.innerHTML = '<i class="bi bi-person-plus-fill text-warning fs-5"></i>';
+                    quotaTitle.innerText = 'Vehículo / Cliente No Registrado';
+                    quotaMessage.innerText = data.mensaje;
+                    
+                    quotaMax.innerText = `${data.cupo_maximo}L`;
+                    quotaConsumed.innerText = '0L';
+                    quotaAvailable.innerText = `${data.disponible}L`;
+                    quotaAvailable.className = 'fw-bold fs-6 text-success';
+                    
+                    // Mostrar campos para autoregistro
+                    autoRegisterFields.classList.remove('d-none');
+                    clienteNombreAuto.required = true;
+                    clienteCiNitAuto.required = true;
+                } else {
+                    // Cliente existente y activo
+                    quotaIcon.innerHTML = '<i class="bi bi-check-circle-fill text-success fs-5"></i>';
+                    quotaTitle.innerText = `${data.nombre} (${data.estado})`;
+                    quotaMessage.innerText = data.mensaje;
+                    
+                    quotaMax.innerText = `${data.cupo_maximo}L`;
+                    quotaConsumed.innerText = `${data.consumido}L`;
+                    quotaAvailable.innerText = `${data.disponible}L`;
+                    
+                    if (data.disponible <= 0) {
+                        quotaAvailable.className = 'fw-bold fs-6 text-danger';
+                    } else if (data.disponible < 20) {
+                        quotaAvailable.className = 'fw-bold fs-6 text-warning';
+                    } else {
+                        quotaAvailable.className = 'fw-bold fs-6 text-success';
+                    }
+
+                    // Ocultar campos de autoregistro
+                    autoRegisterFields.classList.add('d-none');
+                    clienteNombreAuto.required = false;
+                    clienteCiNitAuto.required = false;
+                }
+
+                // Habilitar selección de tanque
+                tanqueSelect.disabled = false;
+                if (tanqueSelect.value) {
+                    litrosInput.disabled = false;
+                }
+                validarFormulario();
+
+            } catch (err) {
+                console.error(err);
+                quotaFeedback.classList.remove('d-none');
+                quotaIcon.innerHTML = '<i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>';
+                quotaTitle.innerText = 'Error de Red';
+                quotaMessage.innerText = 'No se pudo verificar el cupo del cliente en este momento.';
+                deshabilitarControlesVenta();
+            }
+        }
+
+        function validarFormulario() {
+            const litros = parseFloat(litrosInput.value || '0');
+            let formValido = true;
+            
+            // Limpiar errores previos
+            litrosWarning.innerText = '';
+            litrosInput.classList.remove('is-invalid');
+
+            // Si no hay datos de cliente o tanque
+            if (!clientDetails || !tanqueSelect.value) {
+                btnProcesar.disabled = true;
+                return;
+            }
+
+            // Validar litros > 0
+            if (litros <= 0) {
+                formValido = false;
+            }
+
+            // Validar si excede el cupo disponible del cliente
+            if (litros > clientDetails.disponible) {
+                litrosWarning.innerHTML = `<i class="bi bi-x-circle-fill"></i> La cantidad supera el cupo semanal disponible de <strong>${clientDetails.disponible} Litros</strong>.`;
+                litrosInput.classList.add('is-invalid');
+                formValido = false;
+            }
+
+            // Validar si excede el stock físico del tanque
+            if (litros > selectedTankStock) {
+                litrosWarning.innerHTML = `<i class="bi bi-x-circle-fill"></i> Stock insuficiente en el tanque seleccionado (Stock real: <strong>${selectedTankStock.toFixed(2)} Litros</strong>).`;
+                litrosInput.classList.add('is-invalid');
+                formValido = false;
+            }
+
+            // Si es cliente suspendido
+            if (clientDetails.suspendido) {
+                formValido = false;
+            }
+
+            // Activar/desactivar botón procesar
+            btnProcesar.disabled = !formValido;
+        }
+
+        function ocultarQuotaFeedback() {
+            quotaFeedback.classList.add('d-none');
+            autoRegisterFields.classList.add('d-none');
+            clienteNombreAuto.required = false;
+            clienteCiNitAuto.required = false;
+        }
+
+        function deshabilitarControlesVenta() {
+            clientDetails = null;
+            tanqueSelect.value = '';
+            tanqueSelect.disabled = true;
+            tankStockFeedback.innerHTML = '';
+            litrosInput.value = '';
+            litrosInput.disabled = true;
+            litrosWarning.innerText = '';
+            litrosInput.classList.remove('is-invalid');
+            btnProcesar.disabled = true;
+        }
+    });
+</script>
+{% endblock %}

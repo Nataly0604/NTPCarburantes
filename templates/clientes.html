@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestión de Clientes - NTPCarburantes Petrol{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1 class="h2 mb-1"><i class="bi bi-people-fill text-primary me-2"></i>Módulo de Gestión de Clientes</h1>
+        <p class="text-muted">Administra el padrón de usuarios y vehículos habilitados para la compra. Controla estados administrativos y bloqueos de seguridad.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Listado de Clientes -->
+    <div class="col-lg-8">
+        <div class="card-custom h-100">
+            <div class="card-custom-header">
+                <span class="fw-bold"><i class="bi bi-person-lines-fill me-2 text-primary"></i>Clientes Registrados</span>
+                <span class="badge bg-secondary">{{ clientes|length }} Clientes</span>
+            </div>
+            <div class="card-custom-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th>Nombre / Razón Social</th>
+                                <th>CI / NIT</th>
+                                <th>Placa Vehículo</th>
+                                <th>Tipo Cliente</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if clientes %}
+                                {% for c in clientes %}
+                                    <tr {% if c.estado == 'Suspendido' %}style="background-color: rgba(217, 83, 79, 0.02)"{% endif %}>
+                                        <td>
+                                            <div class="fw-bold">{{ c.nombre }}</div>
+                                        </td>
+                                        <td>{{ c.ci_nit }}</td>
+                                        <td>
+                                            <span class="badge bg-dark font-monospace text-uppercase" style="letter-spacing: 1px;">{{ c.placa }}</span>
+                                        </td>
+                                        <td>
+                                            {% if c.tipo_cliente == 'Particular' %}
+                                                <span class="badge bg-light text-dark"><i class="bi bi-car-front me-1"></i>Particular</span>
+                                            {% elif c.tipo_cliente == 'Transporte Público' %}
+                                                <span class="badge bg-warning bg-opacity-25 text-warning-emphasis"><i class="bi bi-bus-front me-1"></i>Transp. Público</span>
+                                            {% else %}
+                                                <span class="badge bg-primary bg-opacity-25 text-primary-emphasis"><i class="bi bi-building me-1"></i>Empresa</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if c.estado == 'Activo' %}
+                                                <span class="badge-custom badge-active"><i class="bi bi-check-circle-fill me-1"></i>Activo</span>
+                                            {% else %}
+                                                <span class="badge-custom badge-suspended"><i class="bi bi-slash-circle-fill me-1"></i>Suspendido</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="d-flex gap-1">
+                                                <button type="button" class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#editModal{{ c.id }}">
+                                                    <i class="bi bi-pencil-fill"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ c.id }}">
+                                                    <i class="bi bi-trash3-fill"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    <!-- Modal de Edición -->
+                                    <div class="modal fade" id="editModal{{ c.id }}" tabindex="-1" aria-labelledby="editModalLabel{{ c.id }}" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content card-custom">
+                                                <div class="modal-header card-custom-header">
+                                                    <h5 class="modal-title fw-bold" id="editModalLabel{{ c.id }}"><i class="bi bi-pencil-square text-primary me-2"></i>Editar Cliente</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <form action="{{ url_for('editar_cliente', id=c.id) }}" method="POST">
+                                                    <div class="modal-body p-4">
+                                                        <div class="mb-3">
+                                                            <label for="nombre{{ c.id }}" class="form-label form-label-custom">Nombre Completo / Razón Social</label>
+                                                            <input type="text" class="form-control form-control-custom" id="nombre{{ c.id }}" name="nombre" value="{{ c.nombre }}" required>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label for="ci_nit{{ c.id }}" class="form-label form-label-custom">Cédula de Identidad / NIT</label>
+                                                            <input type="text" class="form-control form-control-custom" id="ci_nit{{ c.id }}" name="ci_nit" value="{{ c.ci_nit }}" required>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label for="placa{{ c.id }}" class="form-label form-label-custom">Placa del Vehículo</label>
+                                                            <input type="text" class="form-control form-control-custom text-uppercase" id="placa{{ c.id }}" name="placa" value="{{ c.placa }}" required>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label for="tipo_cliente{{ c.id }}" class="form-label form-label-custom">Tipo de Cliente</label>
+                                                            <select class="form-select form-control-custom" id="tipo_cliente{{ c.id }}" name="tipo_cliente" required>
+                                                                <option value="Particular" {% if c.tipo_cliente == 'Particular' %}selected{% endif %}>Particular</option>
+                                                                <option value="Transporte Público" {% if c.tipo_cliente == 'Transporte Público' %}selected{% endif %}>Transporte Público</option>
+                                                                <option value="Empresa" {% if c.tipo_cliente == 'Empresa' %}selected{% endif %}>Empresa</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label for="estado{{ c.id }}" class="form-label form-label-custom">Estado Administrativo</label>
+                                                            <select class="form-select form-control-custom" id="estado{{ c.id }}" name="estado" required>
+                                                                <option value="Activo" {% if c.estado == 'Activo' %}selected{% endif %}>Activo (Habilitado)</option>
+                                                                <option value="Suspendido" {% if c.estado == 'Suspendido' %}selected{% endif %}>Suspendido (Bloqueado)</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer border-0 p-3 bg-light">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                        <button type="submit" class="btn btn-primary-custom">Guardar Cambios</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Modal de Eliminación -->
+                                    <div class="modal fade" id="deleteModal{{ c.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ c.id }}" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content card-custom">
+                                                <div class="modal-header card-custom-header text-danger border-bottom-0">
+                                                    <h5 class="modal-title fw-bold" id="deleteModalLabel{{ c.id }}"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Eliminar Cliente</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body p-4 text-center">
+                                                    ¿Estás seguro de que deseas eliminar a <strong>{{ c.nombre }}</strong> (Placa: {{ c.placa }})?
+                                                    <p class="text-danger small mt-2"><i class="bi bi-info-circle me-1"></i>Esta acción eliminará permanentemente al cliente y todo su historial de ventas asociadas en la base de datos.</p>
+                                                </div>
+                                                <form action="{{ url_for('eliminar_cliente', id=c.id) }}" method="POST">
+                                                    <div class="modal-footer border-0 p-3 bg-light justify-content-center">
+                                                        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Cancelar</button>
+                                                        <button type="submit" class="btn btn-danger px-4">Eliminar Definitivamente</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">No hay clientes registrados en el sistema.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registro de Nuevo Cliente -->
+    <div class="col-lg-4">
+        <div class="card-custom">
+            <div class="card-custom-header">
+                <span class="fw-bold"><i class="bi bi-person-plus-fill me-2 text-primary"></i>Registrar Nuevo Cliente</span>
+            </div>
+            <div class="card-custom-body">
+                <form action="{{ url_for('clientes') }}" method="POST">
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label form-label-custom">Nombre Completo / Razón Social</label>
+                        <input type="text" class="form-control form-control-custom" id="nombre" name="nombre" placeholder="ej. Juan Perez" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="ci_nit" class="form-label form-label-custom">Cédula de Identidad / NIT</label>
+                        <input type="text" class="form-control form-control-custom" id="ci_nit" name="ci_nit" placeholder="ej. 8765432" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="placa" class="form-label form-label-custom">Placa del Vehículo</label>
+                        <input type="text" class="form-control form-control-custom text-uppercase" id="placa" name="placa" placeholder="ej. ABC-123" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tipo_cliente" class="form-label form-label-custom">Tipo de Cliente</label>
+                        <select class="form-select form-control-custom" id="tipo_cliente" name="tipo_cliente" required>
+                            <option value="" disabled selected>Seleccione tipo...</option>
+                            <option value="Particular">Particular</option>
+                            <option value="Transporte Público">Transporte Público</option>
+                            <option value="Empresa">Empresa</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="estado" class="form-label form-label-custom">Estado Administrativo</label>
+                        <select class="form-select form-control-custom" id="estado" name="estado" required>
+                            <option value="Activo">Activo (Habilitado)</option>
+                            <option value="Suspendido">Suspendido (Bloqueado)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-primary-custom"><i class="bi bi-save2 me-2"></i>Registrar Cliente</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

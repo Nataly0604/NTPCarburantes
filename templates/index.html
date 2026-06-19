@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+
+{% block title %}Inicio - NTPCarburantes Petrol{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+        <h1 class="h2 mb-1">Panel de Control General</h1>
+        <p class="text-muted">Estación de Servicio: <strong>{{ empresa.nombre if empresa else "NTPCarburantes Petrol" }}</strong> | NIT: {{ empresa.nit if empresa else "-" }}</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <span class="badge bg-dark px-3 py-2 fs-7">
+            <i class="bi bi-clock-fill me-1"></i> {{ datetime_now.strftime('%d/%m/%Y %H:%M') if datetime_now else 'En vivo' }}
+        </span>
+    </div>
+</div>
+
+<!-- Tarjetas de Estadísticas Rápidas -->
+<div class="row g-4 mb-5">
+    <div class="col-md-4">
+        <div class="card-custom">
+            <div class="card-custom-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-primary bg-opacity-10 p-3 text-primary d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                    <i class="bi bi-people-fill fs-3"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted mb-0">Clientes Habilitados</h6>
+                    <h3 class="mb-0 fw-bold">{{ total_clientes }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card-custom">
+            <div class="card-custom-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-info bg-opacity-10 p-3 text-info d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                    <i class="bi bi-box-arrow-in-down fs-3"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted mb-0">Ingresos Registrados</h6>
+                    <h3 class="mb-0 fw-bold">{{ total_ingresos }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card-custom">
+            <div class="card-custom-body d-flex align-items-center gap-3">
+                <div class="rounded-circle bg-success bg-opacity-10 p-3 text-success d-flex align-items-center justify-content-center" style="width: 60px; height: 60px;">
+                    <i class="bi bi-cart-check-fill fs-3"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted mb-0">Ventas Realizadas</h6>
+                    <h3 class="mb-0 fw-bold">{{ total_ventas }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sección de Monitoreo de Tanques -->
+<h3 class="h4 mb-4"><i class="bi bi-fuel-pump text-primary me-2"></i>Monitoreo de Tanques en Tiempo Real</h3>
+
+{% if alertas_tanques %}
+    <div class="alert alert-danger card-custom d-flex align-items-center gap-3 mb-4 border-start border-danger border-4 alert-pulse" role="alert">
+        <i class="bi bi-exclamation-triangle-fill fs-3 text-danger"></i>
+        <div>
+            <h6 class="alert-heading fw-bold mb-0">¡Alerta de Stock Crítico!</h6>
+            <p class="mb-0">Los siguientes tanques están por debajo del nivel mínimo de seguridad: 
+                {% for t in alertas_tanques %}
+                    <strong>{{ t.identificador }} ({{ t.tipo_carburante }})</strong>: {{ t.stock_actual|round(1) }}L / Mín: {{ t.stock_minimo }}L{% if not loop.last %}, {% endif %}
+                {% endfor %}. Se requiere reabastecimiento inmediato.
+            </p>
+        </div>
+    </div>
+{% endif %}
+
+<div class="row g-4 mb-5">
+    {% if tanques %}
+        {% for t in tanques %}
+            <div class="col-lg-3 col-md-6">
+                <div class="card-custom {% if t.alerta_stock_bajo %}border-danger{% endif %}">
+                    <div class="card-custom-header">
+                        <span class="fw-bold">{{ t.identificador }}</span>
+                        {% if t.alerta_stock_bajo %}
+                            <span class="badge bg-danger badge-custom alert-pulse">STOCK CRÍTICO</span>
+                        {% else %}
+                            <span class="badge bg-success badge-custom">NORMAL</span>
+                        {% endif %}
+                    </div>
+                    <div class="card-custom-body text-center">
+                        <div class="tank-visualizer">
+                            <div class="tank-liquid {% if t.tipo_carburante == 'Gasolina' %}tank-liquid-gasolina{% else %}tank-liquid-diesel{% endif %}" style="height: {{ t.porcentaje_llenado }}%;">
+                                <span class="tank-percentage">{{ t.porcentaje_llenado | round(0) | int }}%</span>
+                            </div>
+                        </div>
+                        <h6 class="fw-bold mb-1">{{ t.tipo_carburante }}</h6>
+                        <p class="text-muted small mb-3">Capacidad Máxima: {{ t.capacidad_maxima }} Litros</p>
+                        <div class="d-flex justify-content-between border-top pt-2 text-start">
+                            <div>
+                                <span class="text-muted small">Stock actual</span>
+                                <div class="fw-bold">{{ t.stock_actual | round(2) }} L</div>
+                            </div>
+                            <div class="text-end">
+                                <span class="text-muted small">Mín. requerido</span>
+                                <div class="text-danger fw-bold">{{ t.stock_minimo }} L</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12 text-center py-5">
+            <div class="card-custom p-5">
+                <i class="bi bi-droplet-fill text-muted fs-1 mb-3"></i>
+                <h5>No hay tanques registrados</h5>
+                <p class="text-muted">Por favor dirígete al módulo de <a href="{{ url_for('tanques') }}">Tanques</a> para registrar la infraestructura.</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Ventas Recientes y Accesos Rápidos -->
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card-custom h-100">
+            <div class="card-custom-header">
+                <span class="fw-bold"><i class="bi bi-clock-history text-primary me-2"></i>Últimas Ventas Controladas</span>
+                <a href="{{ url_for('ventas') }}" class="btn btn-sm btn-outline-secondary">Ver todas</a>
+            </div>
+            <div class="card-custom-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th>Fecha/Hora</th>
+                                <th>Cliente / Placa</th>
+                                <th>Tanque / Tipo</th>
+                                <th>Litros</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if ventas_recientes %}
+                                {% for v in ventas_recientes %}
+                                    <tr>
+                                        <td>{{ v.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
+                                        <td>
+                                            <div class="fw-bold">{{ v.cliente.nombre }}</div>
+                                            <div class="text-muted small">Placa: {{ v.cliente.placa }}</div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ v.tanque.identificador }}</span>
+                                            <span class="small">{{ v.tanque.tipo_carburante }}</span>
+                                        </td>
+                                        <td class="fw-bold text-success">{{ v.litros|round(2) }} L</td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted">No se han registrado ventas hoy.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card-custom h-100">
+            <div class="card-custom-header">
+                <span class="fw-bold"><i class="bi bi-lightning-fill text-primary me-2"></i>Acciones Rápidas</span>
+            </div>
+            <div class="card-custom-body d-grid gap-3">
+                <a href="{{ url_for('ventas') }}" class="btn btn-primary-custom py-3 text-center">
+                    <i class="bi bi-cart-check-fill me-2 fs-5"></i> Nueva Venta Controlada
+                </a>
+                <a href="{{ url_for('ingresos') }}" class="btn btn-dark py-3 text-center rounded-3">
+                    <i class="bi bi-box-arrow-in-down me-2 fs-5"></i> Registrar Abastecimiento
+                </a>
+                <a href="{{ url_for('clientes') }}" class="btn btn-outline-secondary py-3 text-center rounded-3">
+                    <i class="bi bi-person-plus-fill me-2 fs-5"></i> Registrar Cliente Nuevo
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

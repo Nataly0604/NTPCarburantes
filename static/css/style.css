@@ -1,0 +1,275 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --primary: #0f9f85;
+    --primary-rgb: 15, 159, 133;
+    --primary-hover: #0b806a;
+    --secondary: #2b3a4a;
+    --bg-page: #f4f7f6;
+    --bg-card: #ffffff;
+    --text-main: #2b3a4a;
+    --text-muted: #6c7a89;
+    --accent-danger: #d9534f;
+    --accent-warning: #f0ad4e;
+    --accent-success: #5cb85c;
+    --border-color: #e2e8f0;
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.02);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08);
+    --radius: 12px;
+    --radius-sm: 6px;
+    --radius-lg: 20px;
+    --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body {
+    font-family: 'Outfit', sans-serif;
+    background-color: var(--bg-page);
+    color: var(--text-main);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Navbar Premium Styling */
+.navbar-custom {
+    background-color: var(--secondary);
+    box-shadow: var(--shadow-md);
+    padding: 0.8rem 1.5rem;
+    border-bottom: 3px solid var(--primary);
+}
+
+.navbar-custom .navbar-brand {
+    font-weight: 700;
+    font-size: 1.4rem;
+    letter-spacing: -0.5px;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.navbar-custom .navbar-brand span {
+    color: var(--primary);
+}
+
+.navbar-custom .nav-link {
+    color: rgba(255, 255, 255, 0.8) !important;
+    font-weight: 500;
+    padding: 0.5rem 1rem !important;
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+}
+
+.navbar-custom .nav-link:hover, 
+.navbar-custom .nav-item.active .nav-link {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Layout and Container */
+.main-content {
+    flex: 1;
+    padding: 2.5rem 0;
+}
+
+/* Cards Premium Styling */
+.card-custom {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+    overflow: hidden;
+}
+
+.card-custom:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.card-custom-header {
+    background-color: transparent;
+    border-bottom: 1px solid var(--border-color);
+    padding: 1.25rem 1.5rem;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-custom-body {
+    padding: 1.5rem;
+}
+
+/* Fuel Tank Representation */
+.tank-visualizer {
+    position: relative;
+    height: 160px;
+    width: 100%;
+    background-color: #e2e8f0;
+    border-radius: var(--radius);
+    overflow: hidden;
+    border: 2px solid var(--border-color);
+    margin-bottom: 1rem;
+}
+
+.tank-liquid {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    transition: height 0.8s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tank-liquid-gasolina {
+    background: linear-gradient(180deg, #f39c12 0%, #d35400 100%);
+}
+
+.tank-liquid-diesel {
+    background: linear-gradient(180deg, #3498db 0%, #2980b9 100%);
+}
+
+.tank-percentage {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.95);
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.4);
+    z-index: 2;
+}
+
+/* Interactive Elements */
+.btn-primary-custom {
+    background-color: var(--primary);
+    border: none;
+    color: #ffffff;
+    font-weight: 600;
+    padding: 0.6rem 1.5rem;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 4px 6px rgba(15, 159, 133, 0.2);
+    transition: var(--transition);
+}
+
+.btn-primary-custom:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px rgba(15, 159, 133, 0.3);
+}
+
+.btn-primary-custom:disabled {
+    background-color: #cbd5e1;
+    color: #94a3b8;
+    box-shadow: none;
+    transform: none;
+    cursor: not-allowed;
+}
+
+/* Form Styles */
+.form-control-custom {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 0.65rem 0.85rem;
+    font-size: 0.95rem;
+    transition: var(--transition);
+}
+
+.form-control-custom:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(15, 159, 133, 0.15);
+    outline: none;
+}
+
+.form-label-custom {
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 0.4rem;
+    color: var(--text-main);
+}
+
+/* Custom Table */
+.table-custom {
+    margin-bottom: 0;
+}
+
+.table-custom th {
+    background-color: #f8fafc;
+    font-weight: 600;
+    color: var(--text-muted);
+    border-bottom: 2px solid var(--border-color);
+    padding: 1rem 1.25rem;
+}
+
+.table-custom td {
+    padding: 1rem 1.25rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.table-custom tbody tr {
+    transition: var(--transition);
+}
+
+.table-custom tbody tr:hover {
+    background-color: rgba(244, 247, 246, 0.5);
+}
+
+/* Alerts and Badges */
+.badge-custom {
+    font-weight: 600;
+    padding: 0.35em 0.65em;
+    border-radius: 30px;
+    font-size: 0.8rem;
+}
+
+.badge-active {
+    background-color: rgba(92, 184, 92, 0.15);
+    color: var(--accent-success);
+}
+
+.badge-suspended {
+    background-color: rgba(217, 83, 79, 0.15);
+    color: var(--accent-danger);
+}
+
+/* Live Quota Banner in Sales page */
+.quota-box {
+    background: rgba(15, 159, 133, 0.05);
+    border: 1px solid rgba(15, 159, 133, 0.2);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    transition: var(--transition);
+}
+
+.quota-box.warning {
+    background: rgba(217, 83, 79, 0.05);
+    border-color: rgba(217, 83, 79, 0.2);
+}
+
+.quota-box.suspendido {
+    background: rgba(217, 83, 79, 0.1);
+    border-color: rgba(217, 83, 79, 0.4);
+}
+
+/* Footer Styling */
+footer {
+    background-color: var(--secondary);
+    color: rgba(255, 255, 255, 0.6);
+    padding: 1.5rem 0;
+    font-size: 0.9rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Micro-animations */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+    100% { transform: scale(1); }
+}
+
+.alert-pulse {
+    animation: pulse 2s infinite ease-in-out;
+}

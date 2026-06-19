@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block title %}Ingresos de Carburante - NTPCarburantes Petrol{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1 class="h2 mb-1"><i class="bi bi-box-arrow-in-down text-primary me-2"></i>Módulo de Abastecimiento de Tanques</h1>
+        <p class="text-muted">Registra los ingresos de combustible provenientes de cisternas de proveedores para incrementar las existencias de tus tanques de almacenamiento.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Historial de Ingresos -->
+    <div class="col-lg-8">
+        <div class="card-custom h-100">
+            <div class="card-custom-header">
+                <span class="fw-bold"><i class="bi bi-clock-history me-2 text-primary"></i>Historial de Abastecimientos</span>
+                <span class="badge bg-secondary">{{ ingresos|length }} Ingresos</span>
+            </div>
+            <div class="card-custom-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th>Fecha/Hora</th>
+                                <th>Tanque</th>
+                                <th>Tipo Carburante</th>
+                                <th>Factura / Remisión</th>
+                                <th>Cantidad Ingresada</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if ingresos %}
+                                {% for i in ingresos %}
+                                    <tr>
+                                        <td>{{ i.fecha.strftime('%d/%m/%Y %H:%M') }}</td>
+                                        <td class="fw-bold">{{ i.tanque.identificador }}</td>
+                                        <td>
+                                            {% if i.tanque.tipo_carburante == 'Gasolina' %}
+                                                <span class="badge bg-warning text-dark"><i class="bi bi-fuel-pump me-1"></i>Gasolina</span>
+                                            {% else %}
+                                                <span class="badge bg-info"><i class="bi bi-fuel-pump-diesel me-1"></i>Diésel</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="font-monospace">{{ i.factura }}</td>
+                                        <td class="fw-bold text-success">+{{ i.litros|round(2) }} L</td>
+                                    </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4 text-muted">No se han registrado ingresos de carburante en el sistema.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registro de Ingreso -->
+    <div class="col-lg-4">
+        <div class="card-custom">
+            <div class="card-custom-header">
+                <span class="fw-bold"><i class="bi bi-plus-square me-2 text-primary"></i>Registrar Ingreso (Cisterna)</span>
+            </div>
+            <div class="card-custom-body">
+                <form action="{{ url_for('ingresos') }}" method="POST">
+                    
+                    <div class="mb-3">
+                        <label for="tanque_id" class="form-label form-label-custom">Tanque de Destino</label>
+                        <select class="form-select form-control-custom" id="tanque_id" name="tanque_id" required>
+                            <option value="" disabled selected>Seleccione tanque...</option>
+                            {% for t in tanques %}
+                                <option value="{{ t.id }}">
+                                    {{ t.identificador }} ({{ t.tipo_carburante }}) - Disponible: {{ (t.capacidad_maxima - t.stock_actual)|round(2) }}L de holgura
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text small text-muted">Muestra el espacio libre máximo en cada tanque.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="litros" class="form-label form-label-custom">Litros Ingresados</label>
+                        <div class="input-group">
+                            <input type="number" step="0.01" min="0.01" class="form-control form-control-custom" id="litros" name="litros" placeholder="ej. 5000.50" required>
+                            <span class="input-group-text bg-light">Litros</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="factura" class="form-label form-label-custom">Número de Factura / Remisión</label>
+                        <input type="text" class="form-control form-control-custom" id="factura" name="factura" placeholder="ej. FAC-100234" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="fecha" class="form-label form-label-custom">Fecha y Hora de Recepción</label>
+                        <input type="datetime-local" class="form-control form-control-custom" id="fecha" name="fecha" required>
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-primary-custom"><i class="bi bi-box-arrow-in-down me-2"></i>Registrar Abastecimiento</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Pre-llenar la fecha y hora actual en la zona horaria local
+    document.addEventListener("DOMContentLoaded", function() {
+        const dateInput = document.getElementById('fecha');
+        const now = new Date();
+        
+        // Ajustar a formato ISO local (YYYY-MM-DDTHH:MM)
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        
+        dateInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+    });
+</script>
+{% endblock %}

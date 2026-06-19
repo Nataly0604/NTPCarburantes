@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+
+{% block title %}Gestión de Tanques - NTPCarburantes Petrol{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h1 class="h2 mb-1"><i class="bi bi-droplet-half text-primary me-2"></i>Módulo de Gestión de Tanques</h1>
+        <p class="text-muted">Representación virtual de la infraestructura de almacenamiento físico. Monitorea y administra capacidades y umbrales de seguridad.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Listado de Tanques -->
+    <div class="col-lg-8">
+        <div class="card-custom h-100">
+            <div class="card-custom-header">
+                <span class="fw-bold"><i class="bi bi-list-stars me-2 text-primary"></i>Tanques Registrados</span>
+                <span class="badge bg-secondary">{{ tanques|length }} Tanques</span>
+            </div>
+            <div class="card-custom-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-custom">
+                        <thead>
+                            <tr>
+                                <th>Tanque</th>
+                                <th>Carburante</th>
+                                <th>Capacidad Máxima</th>
+                                <th>Stock Mínimo</th>
+                                <th>Stock Actual</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if tanques %}
+                                {% for t in tanques %}
+                                    <tr {% if t.alerta_stock_bajo %}class="table-danger-light" style="background-color: rgba(217, 83, 79, 0.05)"{% endif %}>
+                                        <td class="fw-bold">{{ t.identificador }}</td>
+                                        <td>
+                                            {% if t.tipo_carburante == 'Gasolina' %}
+                                                <span class="badge bg-warning text-dark"><i class="bi bi-fuel-pump me-1"></i>Gasolina</span>
+                                            {% else %}
+                                                <span class="badge bg-info"><i class="bi bi-fuel-pump-diesel me-1"></i>Diésel</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ t.capacidad_maxima|round(1) }} L</td>
+                                        <td class="text-danger fw-bold">{{ t.stock_minimo|round(1) }} L</td>
+                                        <td class="fw-bold text-success">{{ t.stock_actual|round(2) }} L</td>
+                                        <td>
+                                            <div class="progress" style="height: 10px; border-radius: 10px;">
+                                                <div class="progress-bar {% if t.alerta_stock_bajo %}bg-danger{% else %}bg-success{% endif %}" 
+                                                     role="progressbar" 
+                                                     style="width: {{ t.porcentaje_llenado }}%;" 
+                                                     aria-valuenow="{{ t.porcentaje_llenado }}" 
+                                                     aria-valuemin="0" 
+                                                     aria-valuemax="100">
+                                                </div>
+                                            </div>
+                                            <span class="small text-muted">{{ t.porcentaje_llenado|round(0)|int }}% de capacidad</span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex gap-1">
+                                                <button type="button" class="btn btn-sm btn-outline-dark" data-bs-toggle="modal" data-bs-target="#editModal{{ t.id }}">
+                                                    <i class="bi bi-pencil-fill"></i>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ t.id }}">
+                                                    <i class="bi bi-trash3-fill"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    <!-- Modal de Edición -->
+                                    <div class="modal fade" id="editModal{{ t.id }}" tabindex="-1" aria-labelledby="editModalLabel{{ t.id }}" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content card-custom">
+                                                <div class="modal-header card-custom-header">
+                                                    <h5 class="modal-title fw-bold" id="editModalLabel{{ t.id }}"><i class="bi bi-pencil-square text-primary me-2"></i>Editar Tanque {{ t.identificador }}</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <form action="{{ url_for('editar_tanque', id=t.id) }}" method="POST">
+                                                    <div class="modal-body p-4">
+                                                        <div class="mb-3">
+                                                            <label for="identificador{{ t.id }}" class="form-label form-label-custom">Identificador del Tanque</label>
+                                                            <input type="text" class="form-control form-control-custom" id="identificador{{ t.id }}" name="identificador" value="{{ t.identificador }}" required>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label for="tipo_carburante{{ t.id }}" class="form-label form-label-custom">Tipo de Carburante</label>
+                                                            <select class="form-select form-control-custom" id="tipo_carburante{{ t.id }}" name="tipo_carburante" required>
+                                                                <option value="Gasolina" {% if t.tipo_carburante == 'Gasolina' %}selected{% endif %}>Gasolina</option>
+                                                                <option value="Diésel" {% if t.tipo_carburante == 'Diésel' %}selected{% endif %}>Diésel</option>
+                                                            </select>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label for="capacidad_maxima{{ t.id }}" class="form-label form-label-custom">Capacidad Máxima (Litros)</label>
+                                                            <input type="number" step="0.1" min="1" class="form-control form-control-custom" id="capacidad_maxima{{ t.id }}" name="capacidad_maxima" value="{{ t.capacidad_maxima }}" required>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <label for="stock_minimo{{ t.id }}" class="form-label form-label-custom">Nivel de Stock Mínimo / Alerta (Litros)</label>
+                                                            <input type="number" step="0.1" min="1" class="form-control form-control-custom" id="stock_minimo{{ t.id }}" name="stock_minimo" value="{{ t.stock_minimo }}" required>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer border-0 p-3 bg-light">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                        <button type="submit" class="btn btn-primary-custom">Guardar Cambios</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Modal de Eliminación -->
+                                    <div class="modal fade" id="deleteModal{{ t.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ t.id }}" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content card-custom">
+                                                <div class="modal-header card-custom-header text-danger border-bottom-0">
+                                                    <h5 class="modal-title fw-bold" id="deleteModalLabel{{ t.id }}"><i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Eliminar Tanque</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body p-4 text-center">
+                                                    ¿Estás seguro de que deseas eliminar el tanque <strong>{{ t.identificador }}</strong> ({{ t.tipo_carburante }})?
+                                                    <p class="text-danger small mt-2"><i class="bi bi-info-circle me-1"></i>Esta acción eliminará de forma irreversible el historial de ingresos y ventas asociados a este tanque.</p>
+                                                </div>
+                                                <form action="{{ url_for('eliminar_tanque', id=t.id) }}" method="POST">
+                                                    <div class="modal-footer border-0 p-3 bg-light justify-content-center">
+                                                        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Cancelar</button>
+                                                        <button type="submit" class="btn btn-danger px-4">Eliminar Definitivamente</button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-4 text-muted">No hay tanques registrados en el sistema.</td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registro de Nuevo Tanque -->
+    <div class="col-lg-4">
+        <div class="card-custom">
+            <div class="card-custom-header">
+                <span class="fw-bold"><i class="bi bi-plus-circle me-2 text-primary"></i>Registrar Nuevo Tanque</span>
+            </div>
+            <div class="card-custom-body">
+                <form action="{{ url_for('tanques') }}" method="POST">
+                    <div class="mb-3">
+                        <label for="identificador" class="form-label form-label-custom">Identificador (ej. Tanque T-01)</label>
+                        <input type="text" class="form-control form-control-custom" id="identificador" name="identificador" placeholder="ej. Tanque T-01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tipo_carburante" class="form-label form-label-custom">Tipo de Carburante</label>
+                        <select class="form-select form-control-custom" id="tipo_carburante" name="tipo_carburante" required>
+                            <option value="" disabled selected>Seleccione tipo...</option>
+                            <option value="Gasolina">Gasolina</option>
+                            <option value="Diésel">Diésel</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="capacidad_maxima" class="form-label form-label-custom">Capacidad Máxima (Litros)</label>
+                        <input type="number" step="0.1" min="1" class="form-control form-control-custom" id="capacidad_maxima" name="capacidad_maxima" placeholder="ej. 10000" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="stock_minimo" class="form-label form-label-custom">Nivel de Stock Mínimo (Litros)</label>
+                        <input type="number" step="0.1" min="1" class="form-control form-control-custom" id="stock_minimo" name="stock_minimo" placeholder="ej. 1000" required>
+                    </div>
+                    
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-primary-custom"><i class="bi bi-save2 me-2"></i>Registrar Tanque</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

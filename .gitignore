@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Credenciales y variables de entorno (¡NUNCA subir a GitHub!)
+.env
+.env.*
+
 # Virtual environments
 venv/
 .venv/
